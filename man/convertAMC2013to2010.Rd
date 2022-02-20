@@ -6,6 +6,13 @@
 \usage{
 convertAMC2013to2010(dataframe, codMun = "IBGE7", nomeMun = "NOME")
 }
+\arguments{
+\item{dataframe}{dados com registros municipais que serão normalizados}
+
+\item{codMun}{nome da coluna que armazena o código IBGE do município}
+
+\item{nomeMun}{nome da coluna que armazena o nome do município}
+}
 \description{
 Esta função carrega os dados existentes em um diretório. Os dados precisam estar formatados conforme disponibilizados pela PNUD
 }

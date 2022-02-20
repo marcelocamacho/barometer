@@ -1,29 +1,34 @@
+evaluate<-function(x){
+ eval(parse(text=x))
+}
 
-createDimensions <- function(){
+
+createDimensions <- function(dimentions=c("Ambiental", "Humana")){
 
  print(">> APLICAÇÃO DO BARÔMETRO DA SUSTENTABILIDADE <<")
- dimentions <- readline(prompt = "Quais as dimensões que voce deseja criar?\n Nomes separados por vírgula. \nPor exemplo: Ambiental, Humana, Social")
 
- if(is.null(dimentions)||length(dimentions)<3){
-  dimentions<-"Humana,Ambiental"
+ if(is.null(dimentions)||length(dimentions)<2){
+  message("You must provide at least two dimensions")
+  exit()
  }
 
- dimentions <- unlist(strsplit(dimentions,split = ','))
- print(dimentions)
- for(i in dimentions){
+ for(di in dimentions){
   x <- readline(prompt =
-                 paste("Selecione as variáveis da dimensão",i,":",sep = ' '))
+                 paste("Selecione as variáveis da dimensão",di,"(separado por vírgula):",sep = ' '))
+  x<-unlist(strsplit(x,split = ','))
+
   if(is.null(x)||length(x)<3||is.na(x)){
    errorCondition("É necessário incluir uma variável válida para o indicador")
   }
 
+  assign(di,
+         setNames(
+          data.frame(
+           matrix(ncol = length(x), nrow = 0)
+          ), x),.GlobalEnv)
 
  }
- variaveis
-
 }
-
-
 
 
 #' Função para carregar os dados a partir dos arquivos
@@ -48,9 +53,29 @@ loadDataFromFiles <- function(diretorio = "data"){
                        rep("text",3),
                        rep("numeric",78)))
 
+  message(
+   sprintf("A base de dados %s possui os anos %s.\n A base de dados %s possui os anos %s.\n",
+          quote("'CENSO'"),
+          paste(unique(censo$ANO),collapse = ','),
+          quote("'Registros Administrativos'"),
+          paste(unique(regAdm$ANO),collapse = ','))
 
-  censo <- dplyr::filter(.data=censo,ANO==2010)
-  regAdm <- dplyr::filter(.data=regAdm,ANO==2013)
+  )
+
+  anoCenso <-readline("Selecione o ano da base CENSO: ")
+  anoRegAdm <-readline("Selecione o ano da base REGISTROS ADMINISTRATIVOS: ")
+
+  censo <- dplyr::filter(.data=censo,ANO==as.numeric(anoCenso))
+  regAdm <- dplyr::filter(.data=regAdm,ANO==as.numeric(anoRegAdm))
+
+  message("Os anos selecionados são diferentes e podem implicar em diferenças na quantidade e nome de municípios.")
+  runConverteAMC<-readline("Deseja converter a configuração territorial para o ano de 2010 para uniformizar o nome dos municípios?  [(S)im/(n)ão")
+
+  if(runConverteAMC %in% c('S','s','Sim','sim')){
+   regAdm<-convertAMC2013to2010(regAdm)
+  }
+
+
 
 #  censo <- dplyr::select(.data = censo,Codmun7,'Município',
 #                         MORT1,
@@ -78,8 +103,8 @@ loadDataFromFiles <- function(diretorio = "data"){
 #                          PFOCOS)
 
 
-assign(x = "censo",value = censo, envir = .GlobalEnv)
-assign(x = "regAdm",value = regAdm, envir = .GlobalEnv)
+#assign(x = "censo",value = censo, envir = .GlobalEnv)
+#assign(x = "regAdm",value = regAdm, envir = .GlobalEnv)
 
 }
 

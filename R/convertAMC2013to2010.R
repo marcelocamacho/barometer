@@ -16,8 +16,10 @@
 #' OBS: O município foi desmembrado utilizando área de 3 municípios (Água Clara,
 #' Costa Rica e Chapadão do Sul) no entanto optou-se por agrega-lo ao município mais populoso;
 #'
-#'
-#'
+#'@param dataframe dados com registros municipais que serão normalizados
+#'@param codMun nome da coluna que armazena o código IBGE do município
+#'@param nomeMun nome da coluna que armazena o nome do município
+#'@export
 convertAMC2013to2010 <- function(dataframe, codMun = "IBGE7",nomeMun = "NOME"){
  filtro = parse(text=paste("dataframe",codMun,sep = '$'))
  dataframe[eval(filtro) == "1504752",c(`codMun`,`nomeMun`)] = list("1506807","Santarém")
