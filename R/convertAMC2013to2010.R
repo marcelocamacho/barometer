@@ -1,42 +1,40 @@
-#' Função para carregar os dados a partir dos arquivos
+#' Function to load data from files
 #'
-#' Esta função carrega os dados existentes em um diretório. Os dados precisam estar formatados conforme disponibilizados pela PNUD
+#' This function loads existing data into a directory. Data must be formatted as made available by PNUD
 #'
-#' No ano de 2013 foram criados 5 municípios a partir do desmembramento de territórios
-#' municipais. Análises longitudinais ou estudos transversais que utilizem variáveis de períodos
-#' Identificando os municípios novos
-#' ```regAdm[!(unique(regAdm$IBGE7) %in% unique(censo$Codmun7)),c("IBGE7","NOME")]```
-#' Pesquisa de onde o município foi desmembrado e localiza o código do IBGE
-#' ```subset(regAdm, NOME == "Santarém" & substr(regAdm$IBGE7,1,2)=="15", select = c("ANO","IBGE7","NOME"))
-#' 1504752(Mojuí dos Campos)  -> 1506807(Santarém)
+#' In 2013, 5 municipalities were created from the dismemberment of municipal
+#' territories. Longitudinal analyzes or cross-sectional studies that use period variables.
+#' 1504752(Moju\\u00ed dos Campos)  -> 1506807(Santar\\u00e9m)
 #' 4212650(Pescaria Brava)    -> 4209409(Laguna)
-#' 4220000(Balneário Rincão)  -> 4207007(Içara)
-#' 4314548(Pinto Bandeira)    -> 4302105(Bento Gonçalves)
-#' 5006275(Paraíso das Águas) ->5002951(Chapadão do Sul)```
-#' OBS: O município foi desmembrado utilizando área de 3 municípios (Água Clara,
-#' Costa Rica e Chapadão do Sul) no entanto optou-se por agrega-lo ao município mais populoso;
+#' 4220000(Balne\\u00e1rio Rinc\\u00e3o)  -> 4207007(I\\u00e7ara)
+#' 4314548(Pinto Bandeira)    -> 4302105(Bento Gon\\u00e7alves)
+#' 5006275(Para\\u00edso das \\u00c1guas) ->5002951(Chapad\\u00e3o do Sul)```
+#' OBS: The municipality was split using an area of 3 municipalities (\\u00c1gua Clara, Costa Rica and Chapad\\u00e3o do Sul), however it was decided to add it to the most populous municipality;
 #'
-#'@param dataframe dados com registros municipais que serão normalizados
-#'@param codMun nome da coluna que armazena o código IBGE do município
-#'@param nomeMun nome da coluna que armazena o nome do município
-#'@export
+#' @param dataframe data with municipal records that will be normalized
+#' @param codMun name of the column that stores the IBGE code of the municipality
+#' @param nomeMun column name that stores the municipality name
+#'
+#' @return dataframe
+#'
+#' @export
+#'
 convertAMC2013to2010 <- function(dataframe, codMun = "IBGE7",nomeMun = "NOME"){
  filtro = parse(text=paste("dataframe",codMun,sep = '$'))
- dataframe[eval(filtro) == "1504752",c(`codMun`,`nomeMun`)] = list("1506807","Santarém")
+ dataframe[eval(filtro) == "1504752",c(`codMun`,`nomeMun`)] = list("1506807",stringi::stri_unescape_unicode("Santar\\u00e9m"))
  dataframe[eval(filtro) == "4212650",c(`codMun`,`nomeMun`)] = list("4209409","Laguna")
- dataframe[eval(filtro) == "4220000",c(`codMun`,`nomeMun`)] = list("4207007","Içara")
- dataframe[eval(filtro) == "4314548",c(`codMun`,`nomeMun`)] = list("4302105","Bento Gonçalves")
- dataframe[eval(filtro) == "5006275",c(`codMun`,`nomeMun`)] = list("5002951","Chapadão do Sul")
+ dataframe[eval(filtro) == "4220000",c(`codMun`,`nomeMun`)] = list("4207007",stringi::stri_unescape_unicode("I\\u00e7ara"))
+ dataframe[eval(filtro) == "4314548",c(`codMun`,`nomeMun`)] = list("4302105",stringi::stri_unescape_unicode("Bento Gon\\u00e7alves"))
+ dataframe[eval(filtro) == "5006275",c(`codMun`,`nomeMun`)] = list("5002951",stringi::stri_unescape_unicode("Chapad\\u00e3o do Sul"))
 
  colCodMun <- eval(parse(text=paste("dataframe",codMun,sep = '$')))
  colNomeMun <- eval(parse(text=paste("dataframe",nomeMun,sep = '$')))
 
-
  return(
-
-  aggregate(x=dataframe[,-(1:2)],by = list(codmun = colCodMun,municipio = colNomeMun),
-            FUN = sum)
+  #stats::aggregate(x=dataframe[,-(1:4)],by = list(IBGE7=colCodMun,NOME=colNomeMun),FUN = sum)
+  dplyr::group_by(.data = dataframe,IBGE7,NOME) %>%
+   dplyr::select(-ANO,-DESAGREGACAO) %>%
+   dplyr::summarise(across(where(is.numeric),sum))
   )
 }
 
-#dataframe <- merge(censo,novo,by.x = c("Codmun7","Município"),by.y = c("codmun","municipio"),all.y = T)
