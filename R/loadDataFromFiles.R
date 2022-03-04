@@ -1,110 +1,81 @@
-evaluate<-function(x){
- eval(parse(text=x))
-}
-
-
-createDimensions <- function(dimentions=c("Ambiental", "Humana")){
-
- print(">> APLICAÇÃO DO BARÔMETRO DA SUSTENTABILIDADE <<")
-
- if(is.null(dimentions)||length(dimentions)<2){
-  message("You must provide at least two dimensions")
-  exit()
- }
-
- for(di in dimentions){
-  x <- readline(prompt =
-                 paste("Selecione as variáveis da dimensão",di,"(separado por vírgula):",sep = ' '))
-  x<-unlist(strsplit(x,split = ','))
-
-  if(is.null(x)||length(x)<3||is.na(x)){
-   errorCondition("É necessário incluir uma variável válida para o indicador")
-  }
-
-  assign(di,
-         setNames(
-          data.frame(
-           matrix(ncol = length(x), nrow = 0)
-          ), x),.GlobalEnv)
-
- }
-}
-
-
-#' Função para carregar os dados a partir dos arquivos
+#' Function to load raw data from files
 #'
-#' Esta função carrega os dados existentes em um diretório.
-#' Os dados precisam estar formatados conforme disponibilizados pela PNUD.
+#' This function loads existing data into a directory.
+#' Data must be formatted as made available by PNUD.
 #'
-#' @param diretorio Uma string com o caminho para o diretório desejado.
+#' Data source: http://www.atlasbrasil.org.br/acervo/biblioteca
 #'
+#' @importFrom rlang .data
+#' @param ... optional arguments
+#' @param runConverteAMC maintains a minimum area of comparison for different territorial configurations of the database
+#' @param yearCensus year of census data. Includes 2000 and 2010.
+#' @param yearRegAdm year of administrative records data. Includes 2013 to 2016.
 #'
-loadDataFromFiles <- function(diretorio = "data"){
-  censo <- readxl::read_excel(
-   paste(diretorio,
-         "registrosCenso/Atlas 2013_municipal, estadual e Brasil.xlsx",sep = '/'),
-                      sheet = "MUN 91-00-10", col_types = c(
-                       rep("numeric",2), rep("text",3),rep("numeric",232)))
-  regAdm <- readxl::read_excel(
-   paste(diretorio,
-         "registrosAdministrativos/DOWNLOAD REGISTRO ADMINISTRATIVO TOTAL 2012 A 2017.xlsx",sep = '/'),
-                      sheet = "MUNICÍPIO",
-                      col_types = c("numeric",
-                       rep("text",3),
-                       rep("numeric",78)))
+#' @return None
+#'
+#' @export
+loadDataFromFiles <- function(...,
+                              runConverteAMC=TRUE,
+                              yearCensus=2010,
+                              yearRegAdm=2013 ){
+ censoPath <- system.file("extdata",
+                    "Atlas_2013_Censo_municipal_estadual_Brasil.xlsx",package = "barometer")
+ regAdmPath <- system.file("extdata",
+                     "Atlas_2013_RegistrosAdministrativos.xlsx", package = "barometer")
 
-  message(
-   sprintf("A base de dados %s possui os anos %s.\n A base de dados %s possui os anos %s.\n",
-          quote("'CENSO'"),
-          paste(unique(censo$ANO),collapse = ','),
-          quote("'Registros Administrativos'"),
-          paste(unique(regAdm$ANO),collapse = ','))
+  censo <- readxl::read_excel(censoPath,
+               sheet = "MUN 91-00-10",
+               col_types = c(rep("numeric",2), rep("text",3),rep("numeric",232))
+           )
+  regAdm <- readxl::read_excel(regAdmPath,
+               sheet = stringi::stri_unescape_unicode("MUNIC\\u00cdPIO"),
+               col_types = c("numeric", rep("text",3), rep("numeric",78))
+            )
 
-  )
+  censo <- dplyr::filter(.data=censo,ANO==as.numeric(yearCensus))
+  regAdm <- dplyr::filter(.data=regAdm,ANO==as.numeric(yearRegAdm))
 
-  anoCenso <-readline("Selecione o ano da base CENSO: ")
-  anoRegAdm <-readline("Selecione o ano da base REGISTROS ADMINISTRATIVOS: ")
-
-  censo <- dplyr::filter(.data=censo,ANO==as.numeric(anoCenso))
-  regAdm <- dplyr::filter(.data=regAdm,ANO==as.numeric(anoRegAdm))
-
-  message("Os anos selecionados são diferentes e podem implicar em diferenças na quantidade e nome de municípios.")
-  runConverteAMC<-readline("Deseja converter a configuração territorial para o ano de 2010 para uniformizar o nome dos municípios?  [(S)im/(n)ão")
-
-  if(runConverteAMC %in% c('S','s','Sim','sim')){
+  if(runConverteAMC){
    regAdm<-convertAMC2013to2010(regAdm)
   }
 
+  if(nrow(censo)!=nrow(regAdm)){
+   message("Number of different lines")
+  }
+
+  censo <- censo[,naFilter(censo)]
+  regAdm <- regAdm[,naFilter(regAdm)]
 
 
-#  censo <- dplyr::select(.data = censo,Codmun7,'Município',
-#                         MORT1,
-#                         PIND,
-#                         T_ATIV,
-#                         T_ATIV1014,
-#                         RDPC,
-#                         T_ANALF15M,
-#                         T_LUZ,
-#                         GINI,
-#                         T_AGUA,
-#                         T_BANAGUA,
-#                         T_LIXO)
-#  regAdm <- dplyr::select(.data = regAdm, IBGE7,NOME,
-#                          POP_TOT,
-#                          TXMOINF,
-#                          TXOBITMATERN,
-#                          TXMAE10A14,
-#                          REN_PIBPC_D,
-#                          IDEB_AI,
-#                          IDEB_AF,
-#                          TTREVA_EF_TOTAL,
-#                          TTREVA_EM_TOTAL,
-#                          TXMOHOMI,
-#                          PFOCOS)
+  #Utilizando o nome das variáveis diretamente. Isso poderá dar problema se for trocado.
+  dataframe <-
+   merge(x=censo,y=regAdm,
+                    by.x = "Codmun7",
+                    by.y = "IBGE7",
+                    all = F)
+   #dplyr::inner_join(censo,regAdm,
+   #                  by=c("Codmun7" = "IBGE7"))
 
 
-#assign(x = "censo",value = censo, envir = .GlobalEnv)
-#assign(x = "regAdm",value = regAdm, envir = .GlobalEnv)
+  dataframe <- dataframe[,!names(dataframe) %in% c("ANO","Codmun6")];
+
+  return(dataframe)
 
 }
+
+#' Updates the data used in the package
+#'
+#' The data used are made available by autonomous data sources such as IBGE,
+#' IPEA, UNDP and others. Whenever there is the possibility of updating these
+#' sources, this function updates the internal Rdata used by the
+#' sustainability barometer.
+#'
+#'
+renewRD <- function(){
+ data <- loadDataFromFiles()
+ usethis::use_data(data,internal = TRUE)
+}
+
+
+
 
