@@ -2,14 +2,31 @@
 % Please edit documentation in R/loadDataFromFiles.R
 \name{loadDataFromFiles}
 \alias{loadDataFromFiles}
-\title{Função para carregar os dados a partir dos arquivos}
+\title{Function to load raw data from files}
 \usage{
-loadDataFromFiles(diretorio = "data")
+loadDataFromFiles(
+  ...,
+  runConverteAMC = TRUE,
+  yearCensus = 2010,
+  yearRegAdm = 2013
+)
 }
 \arguments{
-\item{diretorio}{Uma string com o caminho para o diretório desejado.}
+\item{...}{optional arguments}
+
+\item{runConverteAMC}{maintains a minimum area of comparison for different territorial configurations of the database}
+
+\item{yearCensus}{year of census data. Includes 2000 and 2010.}
+
+\item{yearRegAdm}{year of administrative records data. Includes 2013 to 2016.}
+}
+\value{
+None
 }
 \description{
-Esta função carrega os dados existentes em um diretório.
-Os dados precisam estar formatados conforme disponibilizados pela PNUD.
+This function loads existing data into a directory.
+Data must be formatted as made available by PNUD.
+}
+\details{
+Data source: http://www.atlasbrasil.org.br/acervo/biblioteca
 }
