@@ -13,10 +13,12 @@ RoxygenNote: 7.1.2
 LazyData: true
 LazyDataCompression: bzip2
 Imports: 
-  readxl,
-  stringi,
-  dplyr,
-  rlang
+    readxl,
+    stringi,
+    dplyr,
+    rlang,
+    tidyselect,
+    ggplot2
 Suggests: 
     testthat (>= 3.0)
 Config/testthat/edition: 3

@@ -15,5 +15,4 @@ test_that("Load external data files", {
  result<- exists("TestLoadVarsfromPackageFunction")
 
  testthat::expect_true(result)
-
 })

@@ -8,13 +8,15 @@
 #' The record (row) of the dataframe is the territories for which the indicators
 #' will be calculated.
 #'
-#' @param dimensions It must have at least two dimensions, if not informed, the two-dimensional proposition composed of "Environment" and "Human" will be adopted.
+#' @param dimensions It must have at least two dimensions, if not informed, the
+#' two-dimensional proposition composed of "Environment" and "Human" will be adopted.
 #' @param variables Database variables that will be included in dimensions
 #' @param ... Other optional arguments
 #'
 #' @return dataframe
 #'
 #' @export
+#'
 createDimensions <- function(dimensions=c("Ambiental", "Humana"),...,variables){
 
  if(is.null(dimensions)||length(dimensions)<2){
@@ -39,3 +41,4 @@ createDimensions <- function(dimensions=c("Ambiental", "Humana"),...,variables){
 
  }
 }
+

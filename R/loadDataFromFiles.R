@@ -17,7 +17,8 @@
 loadDataFromFiles <- function(...,
                               runConverteAMC=TRUE,
                               yearCensus=2010,
-                              yearRegAdm=2013 ){
+                              yearRegAdm=2013
+                            ){
  censoPath <- system.file("extdata",
                     "Atlas_2013_Censo_municipal_estadual_Brasil.xlsx",package = "barometer")
  regAdmPath <- system.file("extdata",

@@ -15,9 +15,16 @@
 #' @param codMun name of the column that stores the IBGE code of the municipality
 #' @param nomeMun column name that stores the municipality name
 #'
+#' @importFrom dplyr %>%
+#' @importFrom dplyr across
 #' @return dataframe
 #'
 #' @export
+#'
+#' Sys.setlocale("LC_ALL","English")
+#' Sys.setlocale("LC_ALL", "pt_br.utf-8")
+#'
+#' Regionalização da sustentabilidade / seleção de municípios por regiões estaduais.
 #'
 convertAMC2013to2010 <- function(dataframe, codMun = "IBGE7",nomeMun = "NOME"){
  filtro = parse(text=paste("dataframe",codMun,sep = '$'))
@@ -34,7 +41,8 @@ convertAMC2013to2010 <- function(dataframe, codMun = "IBGE7",nomeMun = "NOME"){
   #stats::aggregate(x=dataframe[,-(1:4)],by = list(IBGE7=colCodMun,NOME=colNomeMun),FUN = sum)
   dplyr::group_by(.data = dataframe,IBGE7,NOME) %>%
    dplyr::select(-ANO,-DESAGREGACAO) %>%
-   dplyr::summarise(across(where(is.numeric),sum))
+   dplyr::summarise(dplyr::across(tidyselect::vars_select_helpers$where(is.numeric),sum))
   )
 }
+
 

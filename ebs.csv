@@ -1,0 +1,6 @@
+"start"|"end"|"scales"
+1|20|"unsustainable"
+20|40|"p.unsustainable"
+40|60|"intermediary"
+60|80|"p.sustainable"
+80|100|"sustainable"
