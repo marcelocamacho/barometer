@@ -1,7 +1,7 @@
 library(barometer)
 library(dplyr)
 
-#constru??o dos dataframes
+#construção dos dataframes
 ## Carga
 ##
 dataset <- loadDataFromFiles()
@@ -10,9 +10,10 @@ dicionario<-dataDictionary()
 saveRDS(dicionario,file = "c:/desenvolvimento/barometer/dicionario.rds")
 territorios <- readxl::read_excel("Unidades da Federação, Mesorregiões, microrregiões e municípios 2010.xls",
     skip = 2)
-"Micror-região"     "Nome_Microrregião" "Município"
+
 names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_microreg","nome_microreg","cod_mun","nome_mun")
-## Sele??o de atributos da dimens??o ambiental
+
+## Seleção de atributos da dimensão ambiental
 DIM_AMBIENTAL <- dataset %>%
  filter(UF==15) %>%
  select(codigo=Codmun7,
