@@ -1,4 +1,5 @@
 library(barometer)
+library(tidyverse)
 library(dplyr)
 
 #construção dos dataframes
@@ -17,7 +18,7 @@ names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_mic
 DIM_AMBIENTAL <- dataset %>%
  filter(UF==15) %>%
  select(codigo=Codmun7,
-        municipio = Munic?pio,
+        municipio = Município,
         T_LIXO, # % da popula??o que vive em domic?lios urbanos com servi?os de coleta de lixo. Alternativa: SNIS_CDI
         T_BANAGUA ,# %  da popula??o que vive em domic?lios com banheiro e ?gua encanada
         PINTERDRSAI, # % de interna??es por doen?as relacionadas ao saneamento ambiental inadequado
@@ -34,7 +35,7 @@ DIM_SOCIAL <- dataset %>%
  ) %>%
  select(
   codigo=Codmun7,
-  municipio = Munic?pio,
+  municipio = Município,
   T_ANALF15M=T_ANALF15M, # Taxa de analfabetismo da popula??o de 15 anos ou mais de idade
   T_AGUA=T_AGUA, #  % da popula??o que vive em domic?lios com ?gua encanada
   T_ENV=T_ENV, # Taxa de envelhecimento)
@@ -47,7 +48,7 @@ DIM_ECONOMICA <- dataset %>%
  filter(UF==15) %>%
  select(
   codigo=Codmun7,
-  municipio = Munic?pio,
+  municipio = Município,
   REN_PIBPC_D, # Produto Interno Bruto per capita
   GINI, # ?ndice de Gini
   THEIL, # ?ndice de Theil-L
