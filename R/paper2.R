@@ -85,7 +85,7 @@ df$bs<-as.numeric(df$bs)
 # Monte Carlo Process
 {
   # quantidade de municípios amostrados
-  nMun=c(3,5,7,9)
+  nMun=c(2,4,6,8,10,12,14,16,18,20)
   # quantidade de amostragens aleatórias
   nExec = 30
   SMC<-NA
@@ -149,8 +149,8 @@ ifelse( !require(cowplot) ,install.packages("cowplot"),library(cowplot))
 #c("Nordeste","Sudeste","Marajó","Baixo Amazonas","Sudeste","Região Metropolitana")
 } #End Data visualization
 
-write.table(x = SMC, file = "BS_SMC_3Grupos_310322.csv",sep = ';',dec = ',',row.names = F)
+write.table(x = SMC, file = "BS_SMC_3Grupos20Mun_310322.csv",sep = ';',dec = ',',row.names = F)
 
-ggsave("BS_medio_por_3grupos_310322.png", plot = BS_medio_por_regiao)
+ggsave("BS_medio_por_3grupos20Mun_310322.png", plot = BS_medio_por_regiao)
 
-ggsave("Tendencia_por_3grupos_310322.png", plot = Tendencia_por_mesoregiao)
+ggsave("Tendencia_por_3grupos20Mun_310322.png", plot = Tendencia_por_mesoregiao)
