@@ -1,37 +1,48 @@
 library(barometer)
 library(tidyverse)
 library(dplyr)
+source("R/barometer.R")
 
+# Load
+{
 dataframe = readRDS(file = 'c:/desenvolvimento/barometer/dataframe143L24C.rds')
 
-edm2 <- read.csv('c:/desenvolvimento/barometer/paper_edm2.csv',header = T,sep = ';')
-
-edm <- select(edm2,-(dimension:max)) %>% rename(indicador=variable)
-
-ebs=read.csv(file = 'c:/desenvolvimento/barometer/ebs.csv',sep = '|',dec = '.')
+edm_with_statistic <- read.csv('c:/desenvolvimento/barometer/paper_edm2.csv',header = T,sep = ';')
+edm <- select(edm_with_statistic,-(dimension:max)) %>% rename(indicador=variable)
 names(edm)[1]<-"INDICADOR"
 
-territorios <- readxl::read_excel("Unidades da Federação, Mesorregiões, microrregiões e municípios 2010.xls",
+ebs=read.csv(file = 'c:/desenvolvimento/barometer/ebs.csv',sep = '|',dec = '.')
+
+territorios <- readxl::read_excel("c:/desenvolvimento/barometer/Unidades da Federação, Mesorregiões, microrregiões e municípios 2010.xls",
     skip = 2)
 
 names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_microreg","nome_microreg","cod_mun","nome_mun")
 
-data <- dataframe %>%
+} #End Load
+
+# Tranform
+{
+  data <- dataframe %>%
     gather(key = "indicador",value ="valor" ,-codigo,-municipio) %>%
     select(-municipio) %>%
     mutate(codigo = as.character(codigo)) %>%
     spread(key = codigo,value = "valor")
 
-data <- merge(data,edm2[,1:2],by.x = "indicador",by.y = "variable")
+  data <- merge(data,edm[,1:2],by.x = "indicador",by.y = "INDICADOR")
 
-data<-data[,
+  data<-data[,
             c(ncol(data),
               1:(ncol(data)-1))]
-names(data)[1:2]<-c("DIMENSAO","INDICADOR")
+  names(data)[1:2]<-c("DIMENSAO","INDICADOR")
 
-bsData <- NULL
+} #End Tranform
 
-for (mun in names(data)[-c(1:2)]){
+# Barometer Process
+{
+
+  bsData <- NULL
+
+  for (mun in names(data)[-c(1:2)]){
     print(mun)
     munVals <- eval(parse(text=paste0("data$`",mun,"`")))
     munData<-run(data$INDICADOR,munVals,mun)
@@ -40,78 +51,106 @@ for (mun in names(data)[-c(1:2)]){
     }
 
     bsData<-merge(bsData,munData)
-}
+  }
 
-bsData<-merge(data[,c(1:2)],bsData)
+  bsData<-merge(data[,c(1:2)],bsData)
 
-df <- bsData %>%
-    gather(codigo, bs, -c(INDICADOR,DIMENSAO)) %>%
-    inner_join(
-        gather(dataframe,key=INDICADOR,value=valor,-c(codigo,municipio))
-        ) %>%
-    inner_join(.,territorios,by = c("codigo" = "cod_mun") ) %>%
-    select(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO,INDICADOR,valor,bs)
+  df <- bsData %>%
+      gather(codigo, bs, -c(INDICADOR,DIMENSAO)) %>%
+      inner_join(
+          gather(dataframe,key=INDICADOR,value=valor,-c(codigo,municipio))
+          ) %>%
+      inner_join(.,territorios,by = c("codigo" = "cod_mun") ) %>%
+      select(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO,INDICADOR,valor,bs)
+
+  rm(data,bsData,dataframe,edm,ebs,edm_with_statistic)
+
+} #End Barometer Process
+
+## ALTERAÇÃO NA QUANTIDADE DE REGIÕES
+## grupo 1 (baixo amazonas e marajo),
+## grupo 2  (metropolitana e nordeste) e
+## grupo 3 (sudeste e sudoeste)
+##
+df$nome_mesoreg[df$nome_mesoreg %in% c('Baixo Amazonas','Marajó')] <- 'Grupo 1'
+df$nome_mesoreg[df$nome_mesoreg %in% c('Metropolitana de Belém','Nordeste Paraense')] <- 'Grupo 2'
+df$nome_mesoreg[df$nome_mesoreg %in% c('Sudeste Paraense','Sudoeste Paraense')] <- 'Grupo 3'
+
 # Quantos municipios em cada meso-região?
 df %>%
   group_by(nome_mesoreg) %>% summarise(n=n_distinct(municipio))
 
 df$bs<-as.numeric(df$bs)
-# quantidade de municípios amostrados
-nMun=c(3,5,7,9)
-# quantidade de amostragens aleatórias
-nExec = 30
-SMC<-NA
-for (exec in 1:nExec){
-  for (n in nMun){
-    munAmostrados<-NULL
-   for (reg in unique(df$nome_mesoreg)){
-    if(is.null(munAmostrados)){
-      munAmostrados <- territorios %>%
-      filter(nome_mesoreg == reg) %>%
-      select(cod_mun) %>%
-        sample_n(.,n) %>%
-        as.matrix()
-    } else{
 
-      munAmostrados <-c(munAmostrados,
-                        territorios %>%
-                          filter(nome_mesoreg == reg) %>%
-                          select(cod_mun) %>%
-                            sample_n(.,n) %>%
-                            as.matrix()  )
-    }
-   }
+# Monte Carlo Process
+{
+  # quantidade de municípios amostrados
+  nMun=c(3,5,7,9)
+  # quantidade de amostragens aleatórias
+  nExec = 30
+  SMC<-NA
+  munAmostrados<-NULL
+  for (exec in 1:nExec){
+    for (n in nMun){
+     for (reg in unique(df$nome_mesoreg)){
+       munAmostrados <- df %>% select(nome_mesoreg,codigo) %>% distinct() %>%
+         filter(nome_mesoreg == reg) %>% select(codigo) %>% sample_n(.,n) %>% as.matrix()
 
-
-    media_da_amostragem_n <- df %>%
-        filter(codigo %in% munAmostrados) %>%
-        select(-valor,-codigo,-municipio,-INDICADOR,-nome_microreg) %>%
-        group_by(nome_mesoreg,DIMENSAO) %>%
-        summarise(bs_mean = mean(bs)) %>%
-        mutate(nMun=n,nExec=exec,munAmostrados=paste0(munAmostrados,collapse = ','))
-    if(is.na(SMC)){
-      SMC<-media_da_amostragem_n
-    }else{
-      SMC <- rbind(SMC,media_da_amostragem_n)
+      media_da_amostragem_n <- df %>%
+          filter(codigo %in% munAmostrados) %>%
+          select(-valor,-codigo,-municipio,-INDICADOR,-nome_microreg) %>%
+          group_by(nome_mesoreg,DIMENSAO) %>%
+          summarise(bs_mean = mean(bs),.groups = 'drop') %>%
+          mutate(nMun=n,nExec=exec,munAmostrados=paste0(munAmostrados,collapse = ','))
+     cat(
+       sprintf("nExec=%d, nMun=%d, reg=%s\n",exec,nMun,reg)
+       )
+      if(is.na(SMC)){
+        SMC<-media_da_amostragem_n
+      }else{
+        SMC <- rbind(SMC,media_da_amostragem_n)
+      }
+     }
     }
   }
-}
+  rm(munAmostrados,munData,media_da_amostragem_n)
+} # End Monte Carlo Process
 
-dados_grafico <- SMC %>%
-  select(-nExec,-munAmostrados,-DIMENSAO) %>%
-  group_by(nome_mesoreg,nMun) %>%
-  summarise(bs=mean(bs_mean))
+#Data visualization
+{
+  dados_grafico <- SMC %>%
+    select(-nExec,-munAmostrados,-DIMENSAO) %>%
+    group_by(nome_mesoreg,nMun) %>%
+    summarise(bs=mean(bs_mean))
 
-dados_grafico %>%
-  filter(nome_mesoreg == "Nordeste Paraense") %>%
-  ggplot(aes(x=nMun,y=bs)) + theme_minimal()+
-  geom_point() +
-  stat_smooth(method = "lm", col = "red")
+ BS_medio_por_regiao <- dados_grafico %>%
+    ggplot(aes(x=as.factor(nMun),y=bs,fill=as.factor(nome_mesoreg))) +
+  scale_fill_brewer(palette = "Set1") +
+    theme_minimal()+
+    labs(fill = "Mesoregião",title = "Barômetro da Sustentabilidade médio por região",caption = "Média do BS por mesoregião, de acordo com o tamanho da amostra ( Nº de municípios)") + xlab("Nº de municípios amostrados") + ylab("Valor do BS (média)")+
+    geom_bar(stat="identity",position = "dodge" )
+BS_medio_por_regiao
 
+ for (reg in unique(dados_grafico$nome_mesoreg)){
+   varName = paste("plotlm",str_replace(reg,' ','_'),sep = '_')
+  assign(varName,
+         dados_grafico %>%
+          filter(nome_mesoreg == reg) %>%
+          ggplot(aes(x=nMun,y=bs)) + theme_minimal()+
+          geom_point() +
+          stat_smooth(method = "lm", col = "red")
 
-dados_grafico %>%
-  ggplot(aes(x=as.factor(nMun),y=bs,fill=as.factor(nome_mesoreg))) +
-scale_fill_brewer(palette = "Set1") +
-  theme_minimal()+
-  geom_bar(stat="identity",position = "dodge" )
+         )
+ }
+ifelse( !require(cowplot) ,install.packages("cowplot"),library(cowplot))
 
+  Tendencia_por_mesoregiao <- do.call(plot_grid,list(ncol=1,labels="AUTO",plotlist=mget(ls(pattern = 'plotlm_'))))
+  Tendencia_por_mesoregiao
+#c("Nordeste","Sudeste","Marajó","Baixo Amazonas","Sudeste","Região Metropolitana")
+} #End Data visualization
+
+write.table(x = SMC, file = "BS_SMC_3Grupos_310322.csv",sep = ';',dec = ',',row.names = F)
+
+ggsave("BS_medio_por_3grupos_310322.png", plot = BS_medio_por_regiao)
+
+ggsave("Tendencia_por_3grupos_310322.png", plot = Tendencia_por_mesoregiao)
