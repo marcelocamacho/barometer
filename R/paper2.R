@@ -131,6 +131,8 @@ df$bs<-as.numeric(df$bs)
     geom_bar(stat="identity",position = "dodge" )
 BS_medio_por_regiao
 
+ifelse( !require(ggpubr) ,install.packages("ggpubr"),library(ggpubr))
+
  for (reg in unique(dados_grafico$nome_mesoreg)){
    varName = paste("plotlm",str_replace(reg,' ','_'),sep = '_')
   assign(varName,
@@ -138,14 +140,21 @@ BS_medio_por_regiao
           filter(nome_mesoreg == reg) %>%
           ggplot(aes(x=nMun,y=bs)) + theme_minimal()+
           geom_point() +
-          stat_smooth(method = "lm", col = "red")
+           stat_regline_equation(aes(label =
+                                      paste(..eq.label..,..adj.rr.label..,sep = "*plain(\",\")~~")),
+                                label.x = 15, label.y = 20,size=3) +
+          geom_smooth(method = "lm", col = "red") +
 
+           theme_classic()
          )
  }
 ifelse( !require(cowplot) ,install.packages("cowplot"),library(cowplot))
 
-  Tendencia_por_mesoregiao <- do.call(plot_grid,list(ncol=1,labels="AUTO",plotlist=mget(ls(pattern = 'plotlm_'))))
-  Tendencia_por_mesoregiao
+  Tendencia_por_mesoregiao <- do.call(ggarrange,list(ncol=1,labels="AUTO",plotlist=mget(ls(pattern = 'plotlm_'))))
+  annotate_figure(Tendencia_por_mesoregiao,
+                  top = text_grob("Visualizing Tooth Growth", color = "red", face = "bold", size = 14),
+                  bottom = text_grob("Data source: \n ToothGrowth data set", color = "blue", face = "italic", size = 10))
+
 #c("Nordeste","Sudeste","Marajó","Baixo Amazonas","Sudeste","Região Metropolitana")
 } #End Data visualization
 
