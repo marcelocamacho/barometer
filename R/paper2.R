@@ -8,7 +8,7 @@ source("R/barometer.R")
 dataframe = readRDS(file = 'c:/desenvolvimento/barometer/dataframe143L24C.rds')
 
 edm_with_statistic <- read.csv('c:/desenvolvimento/barometer/paper_edm2.csv',header = T,sep = ';')
-edm <- select(edm_with_statistic,-(dimension:max)) %>% rename(indicador=variable)
+edm <- select(edm_with_statistic,-(indicated:UNIDADE)) %>% rename(indicador=variable)
 names(edm)[1]<-"INDICADOR"
 
 ebs=read.csv(file = 'c:/desenvolvimento/barometer/ebs.csv',sep = '|',dec = '.')
@@ -87,7 +87,7 @@ df$bs<-as.numeric(df$bs)
   # quantidade de municípios amostrados
   nMun=c(2,4,6,8,10,12,14,16,18,20)
   # quantidade de amostragens aleatórias
-  nExec = 30
+  nExec = 1
   SMC<-NA
   munAmostrados<-NULL
   for (exec in 1:nExec){
@@ -163,3 +163,7 @@ write.table(x = SMC, file = "BS_SMC_3Grupos20Mun_310322.csv",sep = ';',dec = ','
 ggsave("BS_medio_por_3grupos20Mun_310322.png", plot = BS_medio_por_regiao)
 
 ggsave("Tendencia_por_3grupos20Mun_310322.png", plot = Tendencia_por_mesoregiao)
+
+
+# Gráfico de linha aumentando o número de execuções
+

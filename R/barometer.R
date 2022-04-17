@@ -96,20 +96,18 @@ run<-function(x.indicator,x.factor,name=NULL){
   }else{
     var=name
   }
-
-
   result=NA
-
   df=edm2eds(x.indicator,x.factor,edm = edm)
   for(i in 1:nrow(df)){
-    result=rbind(result,c(df[i,1],as.numeric(bs(df[i,],classes = ebs))))
+    result=rbind(
+      result,
+      c(df[i,1],
+        as.numeric(bs(df[i,],classes = ebs)))
+      )
   }
   result=as.data.frame(result)
   names(result)<-c("INDICADOR",as.character(var))
-  return(
-    na.omit(
-      result
-      ))
+  return(result)
 }
 
 fs_sd<-function(data,cutoff){
