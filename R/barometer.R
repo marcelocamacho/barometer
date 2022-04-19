@@ -1,5 +1,18 @@
 options(warn=-1)
 
+
+nivelBS <- function (bs_value){
+  nivel = ifelse(bs_value<=20,"Insustentável",
+                            ifelse(bs_value<=40,"P. Insustentável",
+                                    ifelse(bs_value<=60,"Intermediário",
+                                            ifelse(bs_value<=80,"P. Sustentável","Sustentável")
+                                    )
+                            )
+                      )
+  return(nivel)
+
+}
+
 convert<-function(x, type="numeric"){
   # converte colunas especificas de um dataframe
   numerico <- function(x){return(as.numeric(gsub(',','',x)))}
