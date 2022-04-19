@@ -1,26 +1,26 @@
-library(barometer)
+#library(barometer)
 library(tidyverse)
 library(dplyr)
 source("R/barometer.R")
 
 # Load
 {
-dataframe = readRDS(file = 'c:/desenvolvimento/barometer/dataframe143L24C.rds')
+dataframe = readRDS(file = './dataframe143L24C.rds')
 
-edm_with_statistic <- read.csv('c:/desenvolvimento/barometer/paper_edm2.csv',header = T,sep = ';')
+edm_with_statistic <- read.csv('./paper_edm2.csv',header = T,sep = ';')
 edm <- select(edm_with_statistic,-(indicated:UNIDADE)) %>% rename(indicador=variable)
 names(edm)[1]<-"INDICADOR"
 
-ebs=read.csv(file = 'c:/desenvolvimento/barometer/ebs.csv',sep = '|',dec = '.')
+ebs=read.csv(file = './ebs.csv',sep = '|',dec = '.')
 
-territorios <- readxl::read_excel("c:/desenvolvimento/barometer/Unidades da Federação, Mesorregiões, microrregiões e municípios 2010.xls",
+territorios <- readxl::read_excel("./Unidades da Federação, Mesorregiões, microrregiões e municípios 2010.xls",
     skip = 2)
 
 names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_microreg","nome_microreg","cod_mun","nome_mun")
 
 } #End Load
 
-# Tranform
+# Transform
 {
   data <- dataframe %>%
     gather(key = "indicador",value ="valor" ,-codigo,-municipio) %>%
@@ -112,6 +112,9 @@ df %>%
 # Tabela atributo x classificação
 
 
+# Correlação entre as regiões (KNN, Pearson)
+
+# Geração de mapas
 
 
 # Monte Carlo Process
