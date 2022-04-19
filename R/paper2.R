@@ -76,16 +76,49 @@ df$nome_mesoreg[df$nome_mesoreg %in% c('Baixo Amazonas','Marajó')] <- 'Grupo 1'
 df$nome_mesoreg[df$nome_mesoreg %in% c('Metropolitana de Belém','Nordeste Paraense')] <- 'Grupo 2'
 df$nome_mesoreg[df$nome_mesoreg %in% c('Sudeste Paraense','Sudoeste Paraense')] <- 'Grupo 3'
 
-# Quantos municipios em cada meso-região?
-df %>%
-  group_by(nome_mesoreg) %>% summarise(n=n_distinct(municipio))
 
 df$bs<-as.numeric(df$bs)
+
+# Quantos municipios em cada meso-região?
+
+df %>%
+  group_by(nome_mesoreg) %>% summarise(municipios=n_distinct(municipio))
+
+# Qual a situação da Sustentabilidade em cada região?
+df %>%
+  select(-valor,-INDICADOR) %>%
+  group_by(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO) %>%
+  summarise(bs=mean(bs)) %>%
+    group_by(nome_mesoreg,nome_microreg,codigo,municipio) %>%
+    summarise(bs=mean(bs)) %>%
+      group_by(nome_mesoreg,nome_microreg) %>%
+      summarise(bs=mean(bs),municipios=n_distinct(municipio)) %>%
+        group_by(nome_mesoreg) %>%
+        summarise(municipios=sum(municipios),
+                  bs=mean(bs)) %>%
+          mutate(nivel=nivelBS(bs))
+
+# Quantos e como os municípios são classificados por região?
+df %>%
+  select(-valor,-INDICADOR,-nome_microreg,-municipio) %>%
+  group_by(nome_mesoreg,codigo,DIMENSAO) %>%
+  summarise(bs=mean(bs)) %>%
+    group_by(nome_mesoreg,codigo) %>%
+    summarise(bs=mean(bs)) %>%
+    mutate(nivel=nivelBS(bs)) %>%
+    select(nome_mesoreg,nivel) %>%
+    table(.)
+
+# Tabela atributo x classificação
+
+
+
 
 # Monte Carlo Process
 {
   # quantidade de municípios amostrados
-  nMun=c(2,4,6,8,10,12,14,16,18,20)
+  nMun=c(2,4,6,8,10)
+ # nMun=c(2,4,6,8,10,12,14,16,18,20)
   # quantidade de amostragens aleatórias
   nExec = 1
   SMC<-NA
