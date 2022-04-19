@@ -61,11 +61,13 @@ edm2eds<-function(x.indicator,x.factor,edm=edm){
     interval = which(names(edm) %in% c("unsustainable","p.unsustainable","intermediary","p.sustainable","sustainable"))
     bias = which(names(edm) %in% "crescent")
     temp=NA
-    for(j in edm[a,interval]){
-      b=which(edm[a,interval]==j)+2
+        for(j in edm[a,interval]){
+
+      b=which(edm[a,interval]==as.character(j))+2
+
       #print(paste("i=",i,"a=",a,"j=",j,"b=",b,"edm[a,3:7]=",edm[a,3:7],"x.factor[a]",x.factor[x]))
       btw_test=isFALSE(between(as.numeric(x.factor[x]),j)[1])
-     # print(paste(i,"-",b,btw_test,a,"=",i,b,"=",j,"btw_teste",btw_test))
+      #print(paste(i,"-",b,btw_test,a,"=",i,b,"=",j,"btw_teste",btw_test))
       if(!btw_test){
         temp=c(i,
                       between(as.numeric(x.factor[x]),j),
@@ -73,12 +75,13 @@ edm2eds<-function(x.indicator,x.factor,edm=edm){
                       edm[a,bias])
 
       } else{
-        if(b==7 & is.na(temp)){
+        if(b == 7 & is.na(temp)){
           temp=c(i,
                  c(NA,x.factor[x],NA),
                  names(edm[b]),
                  edm[a,bias])
         }
+
       }
     }
     df=rbind(df,temp)
