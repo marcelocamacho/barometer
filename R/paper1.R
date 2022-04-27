@@ -6,12 +6,12 @@ library(dplyr)
 ## Carga
 ##
 dataset <- loadDataFromFiles()
-saveRDS(dataset,file = "c:/desenvolvimento/barometer/dataset5565L291C.rds")
+saveRDS(dataset,file = "./dataset5565L291C.rds")
 dicionario<-dataDictionary()
-saveRDS(dicionario,file = "c:/desenvolvimento/barometer/dicionario.rds")
+saveRDS(dicionario,file = "./dicionario.rds")
 territorios <- readxl::read_excel("Unidades da Federação, Mesorregiões, microrregiões e municípios 2010.xls",
     skip = 2)
-
+dataset=readRDS("./dataset5565L291C.rds")
 names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_microreg","nome_microreg","cod_mun","nome_mun")
 
 ## Seleção de atributos da dimensão ambiental

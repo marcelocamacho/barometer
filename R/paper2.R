@@ -6,7 +6,6 @@ source("R/barometer.R")
 # Load
 {
 dataframe = readRDS(file = './dataframe143L24C.rds')
-
 edm_with_statistic <- read.csv('./paper_edm2.csv',header = T,sep = ';')
 edm <- select(edm_with_statistic,-(indicated:UNIDADE)) %>% rename(indicador=variable)
 names(edm)[1]<-"INDICADOR"
@@ -63,7 +62,7 @@ names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_mic
       inner_join(.,territorios,by = c("codigo" = "cod_mun") ) %>%
       select(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO,INDICADOR,valor,bs)
 
-  rm(data,bsData,dataframe,edm,ebs,edm_with_statistic)
+  rm(data,dataframe,edm,ebs,edm_with_statistic)
 
 } #End Barometer Process
 
@@ -72,9 +71,9 @@ names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_mic
 ## grupo 2  (metropolitana e nordeste) e
 ## grupo 3 (sudeste e sudoeste)
 ##
-df$nome_mesoreg[df$nome_mesoreg %in% c('Baixo Amazonas','Marajó')] <- 'Grupo 1'
-df$nome_mesoreg[df$nome_mesoreg %in% c('Metropolitana de Belém','Nordeste Paraense')] <- 'Grupo 2'
-df$nome_mesoreg[df$nome_mesoreg %in% c('Sudeste Paraense','Sudoeste Paraense')] <- 'Grupo 3'
+#df$nome_mesoreg[df$nome_mesoreg %in% c('Baixo Amazonas','Marajó')] <- 'Grupo 1'
+#df$nome_mesoreg[df$nome_mesoreg %in% c('Metropolitana de Belém','Nordeste Paraense')] <- 'Grupo 2'
+#df$nome_mesoreg[df$nome_mesoreg %in% c('Sudeste Paraense','Sudoeste Paraense')] <- 'Grupo 3'
 
 
 df$bs<-as.numeric(df$bs)
@@ -110,9 +109,24 @@ df %>%
     table(.)
 
 # Tabela atributo x classificação
+df %>%
+ select(-valor,-nome_microreg,-municipio,-DIMENSAO) %>%
+ group_by(codigo,INDICADOR) %>%
+ summarise(bs=mean(bs),nivel=nivelBS(mean(bs))) %>% ungroup(.) %>%
+ select(INDICADOR,nivel) %>% table()
 
 
 # Correlação entre as regiões (KNN, Pearson)
+df %>%
+ select(-valor,-INDICADOR,-nome_microreg,-municipio) %>%
+ group_by(nome_mesoreg,codigo,DIMENSAO) %>%
+ summarise(bs=mean(bs)) %>%
+ group_by(nome_mesoreg,DIMENSAO) %>%
+ summarise(bs=mean(bs)) %>% ungroup(.) %>%
+ spread(.,nome_mesoreg,bs) %>%
+ as.data.frame(row.names = DIMENSAO) %>%
+ select(-DIMENSAO) %>% cor()
+
 
 # Geração de mapas
 
