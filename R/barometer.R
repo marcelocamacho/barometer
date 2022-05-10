@@ -2,10 +2,10 @@ options(warn=-1)
 
 
 nivelBS <- function (bs_value){
-  nivel = ifelse(bs_value<=20,"Insustentável",
-                            ifelse(bs_value<=40,"P. Insustentável",
-                                    ifelse(bs_value<=60,"Intermediário",
-                                            ifelse(bs_value<=80,"P. Sustentável","Sustentável")
+  nivel = ifelse(bs_value<=20,"unsustainable",
+                            ifelse(bs_value<=40,"p.unsustainable",
+                                    ifelse(bs_value<=60,"intermediary",
+                                            ifelse(bs_value<=80,"p.sustainable","sustainable")
                                     )
                             )
                       )

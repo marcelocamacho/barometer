@@ -6,7 +6,7 @@ source("R/barometer.R")
 # Load
 {
 dataframe = readRDS(file = './dataframe143L24C.rds')
-edm_with_statistic <- read.csv('./paper_edm2.csv',header = T,sep = ';')
+edm_with_statistic <- read.csv('./paper_edm2.csv',header = T,sep = ';',fileEncoding = "UTF-8")
 edm <- select(edm_with_statistic,-(indicated:UNIDADE)) %>% rename(indicador=variable)
 names(edm)[1]<-"INDICADOR"
 
@@ -62,7 +62,7 @@ names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_mic
       inner_join(.,territorios,by = c("codigo" = "cod_mun") ) %>%
       select(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO,INDICADOR,valor,bs)
 
-  rm(data,dataframe,edm,ebs,edm_with_statistic)
+  rm(data,dataframe,edm,edm_with_statistic)
 
 } #End Barometer Process
 
@@ -129,6 +129,45 @@ df %>%
 
 
 # Geração de mapas
+require(XML)
+require(RCurl)
+require(maptools)
+require(RColorBrewer)
+mapaUF = readShapePoly("15MU500G.shp")
+plot(mapaUF)
+paletaDeCores = brewer.pal(9, 'OrRd')
+mapaData = attr(mapaUF, 'data')
+mapaData$Index = row.names(mapaData)
+df_ambiental<-df %>%
+  select(-valor,-INDICADOR) %>%
+  group_by(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO) %>%
+  summarise(bs=mean(bs)) %>% filter(DIMENSAO=='DIM_AMBIENTAL')
+
+df_ambiental$nivel<-as.factor(nivelBS(df_ambiental$bs))
+
+# Selecionamos algumas cores de uma paleta de cores do pacote RColorBrewer
+paletaDeCores = brewer.pal(9, 'OrRd')
+paletaDeCores = paletaDeCores[-c(1,3,6,9)]
+
+# Agora fazemos um pareamento entre as faixas da variável sobre PIB (categórica) e as cores:
+coresDasCategorias = data.frame(nivel=levels(as.factor(ebs$scales)), Cores=paletaDeCores)
+df_ambiental = merge(df_ambiental, coresDasCategorias)
+
+
+mapaData_ambiental=merge(mapaData, df_ambiental,by.x="CODIGO",by.y="codigo")
+attr(mapaUF, 'data')= mapaData_ambiental
+
+# Configurando tela (reduzindo as margens da figura)
+parDefault = par(no.readonly = T)
+layout(matrix(c(1,2),nrow=2),widths= c(1,1), heights=c(4,1))
+par (mar=c(0,0,0,0))
+
+# Plotando mapa
+plot(mapaUF, col=as.character(mapaData_ambiental$Cores))
+plot(1,1,pch=NA, axes=F)
+legend(x='center', legend=rev(levels(mapaData_ambiental$nivel)),
+ box.lty=0, fill=rev(paletaDeCores),cex=.8, ncol=2,
+ title='Mapa dos municípios brasileiros segundo a dimensão ambiental')
 
 
 # Monte Carlo Process
