@@ -134,7 +134,8 @@ require(RCurl)
 require(maptools)
 require(RColorBrewer)
 mapaUF = readShapePoly("15MU500G.shp")
-plot(mapaUF)
+mapaMun = rgdal::readOGR("15MU500G.shp")
+mapaMun <-
 paletaDeCores = brewer.pal(9, 'OrRd')
 mapaData = attr(mapaUF, 'data')
 mapaData$Index = row.names(mapaData)
@@ -156,19 +157,32 @@ df_ambiental = merge(df_ambiental, coresDasCategorias)
 
 mapaData_ambiental=merge(mapaData, df_ambiental,by.x="CODIGO",by.y="codigo")
 attr(mapaUF, 'data')= mapaData_ambiental
-
+mapaUF_df<-fortify(mapaUF)
+mapaUF_df$id<-as.factor(mapaUF_df$id)
 # Configurando tela (reduzindo as margens da figura)
 parDefault = par(no.readonly = T)
 layout(matrix(c(1,2),nrow=2),widths= c(1,1), heights=c(4,1))
 par (mar=c(0,0,0,0))
 
 # Plotando mapa
-plot(mapaUF, col=as.character(mapaData_ambiental$Cores))
+# https://jtr13.github.io/cc19/plotting-maps-with-r-an-example-based-tutorial.html
+# https://slcladal.github.io/maps.html
+# https://www.geeksforgeeks.org/adding-labels-to-points-plotted-on-world-map-in-r/
+#https://stackoverflow.com/questions/57867991/how-to-annotate-r-map-with-text-and-points
+ggplot() +
+plot(mapaMun, col=as.character(mapaData_ambiental$Cores))+
+text(centroids$lat,centroids$long,centroids$factors,cex = 5,pos = 4,col = "black")+
+geom_text(data = centroids, aes(x=lat,y=long,label=factors), size=3)
+
+plot(mapaMun)
+text(centroids$lat,centroids$long,centroids$factors)
+
+
+
 plot(1,1,pch=NA, axes=F)
 legend(x='center', legend=rev(levels(mapaData_ambiental$nivel)),
  box.lty=0, fill=rev(paletaDeCores),cex=.8, ncol=2,
  title='Mapa dos municípios brasileiros segundo a dimensão ambiental')
-
 
 # Monte Carlo Process
 {
