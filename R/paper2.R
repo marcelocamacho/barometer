@@ -129,13 +129,18 @@ df %>%
 
 
 # Geração de mapas
+# https://jtr13.github.io/cc19/plotting-maps-with-r-an-example-based-tutorial.html
+# https://slcladal.github.io/maps.html
+# https://www.geeksforgeeks.org/adding-labels-to-points-plotted-on-world-map-in-r/
+#https://stackoverflow.com/questions/57867991/how-to-annotate-r-map-with-text-and-points
 require(XML)
 require(RCurl)
 require(maptools)
 require(RColorBrewer)
+
 mapaUF = readShapePoly("15MU500G.shp")
 mapaMun = rgdal::readOGR("15MU500G.shp")
-mapaMun <-
+
 paletaDeCores = brewer.pal(9, 'OrRd')
 mapaData = attr(mapaUF, 'data')
 mapaData$Index = row.names(mapaData)
@@ -149,41 +154,36 @@ df_ambiental$nivel<-as.factor(nivelBS(df_ambiental$bs))
 # Selecionamos algumas cores de uma paleta de cores do pacote RColorBrewer
 paletaDeCores = brewer.pal(9, 'OrRd')
 paletaDeCores = paletaDeCores[-c(1,3,6,9)]
-
-# Agora fazemos um pareamento entre as faixas da variável sobre PIB (categórica) e as cores:
 coresDasCategorias = data.frame(nivel=levels(as.factor(ebs$scales)), Cores=paletaDeCores)
-df_ambiental = merge(df_ambiental, coresDasCategorias)
 
+df_ambiental = merge(df_ambiental, coresDasCategorias)
 
 mapaData_ambiental=merge(mapaData, df_ambiental,by.x="CODIGO",by.y="codigo")
 attr(mapaUF, 'data')= mapaData_ambiental
+
 mapaUF_df<-fortify(mapaUF)
 mapaUF_df$id<-as.factor(mapaUF_df$id)
+
+centroids <- setNames(do.call("rbind.data.frame", by(mapaUF_df, mapaUF_df$id, function(x) {Polygon(x[c('long', 'lat')])@labpt})), c('long', 'lat'))
+centroids$factors <- levels(mapaUF_df$id)
+
 # Configurando tela (reduzindo as margens da figura)
 parDefault = par(no.readonly = T)
 layout(matrix(c(1,2),nrow=2),widths= c(1,1), heights=c(4,1))
 par (mar=c(0,0,0,0))
 
-# Plotando mapa
-# https://jtr13.github.io/cc19/plotting-maps-with-r-an-example-based-tutorial.html
-# https://slcladal.github.io/maps.html
-# https://www.geeksforgeeks.org/adding-labels-to-points-plotted-on-world-map-in-r/
-#https://stackoverflow.com/questions/57867991/how-to-annotate-r-map-with-text-and-points
-ggplot() +
-plot(mapaMun, col=as.character(mapaData_ambiental$Cores))+
-text(centroids$lat,centroids$long,centroids$factors,cex = 5,pos = 4,col = "black")+
-geom_text(data = centroids, aes(x=lat,y=long,label=factors), size=3)
+plot(mapaMun, col=as.character(mapaData_ambiental$Cores))
+text(centroids$lat,centroids$long,centroids$factors,cex = 5,pos = 4,col = "black")
 
 plot(mapaMun)
-text(centroids$lat,centroids$long,centroids$factors)
-
-
-
+text(x=as.numeric(centroids$lat),y=as.numeric(centroids$long),'4', cex=0.8,pos=3)
+text(x=-50, y=-2, "my text here", col = "red", srt = 90, cex=5,pos=4)
+text(locator(1), '1', col = "red", cex=0.8,pos=3)
 plot(1,1,pch=NA, axes=F)
 legend(x='center', legend=rev(levels(mapaData_ambiental$nivel)),
  box.lty=0, fill=rev(paletaDeCores),cex=.8, ncol=2,
  title='Mapa dos municípios brasileiros segundo a dimensão ambiental')
-
+locator(1)
 # Monte Carlo Process
 {
   # quantidade de municípios amostrados
@@ -218,8 +218,7 @@ legend(x='center', legend=rev(levels(mapaData_ambiental$nivel)),
   }
   rm(munAmostrados,munData,media_da_amostragem_n)
 } # End Monte Carlo Process
-
-#Data visualization
+# Data visualization
 {
   dados_grafico <- SMC %>%
     select(-nExec,-munAmostrados,-DIMENSAO) %>%
@@ -260,13 +259,9 @@ ifelse( !require(cowplot) ,install.packages("cowplot"),library(cowplot))
 
 #c("Nordeste","Sudeste","Marajó","Baixo Amazonas","Sudeste","Região Metropolitana")
 } #End Data visualization
-
-write.table(x = SMC, file = "BS_SMC_3Grupos20Mun_310322.csv",sep = ';',dec = ',',row.names = F)
-
-ggsave("BS_medio_por_3grupos20Mun_310322.png", plot = BS_medio_por_regiao)
-
-ggsave("Tendencia_por_3grupos20Mun_310322.png", plot = Tendencia_por_mesoregiao)
-
-
-# Gráfico de linha aumentando o número de execuções
-
+# Salvando os dados
+{
+ write.table(x = SMC, file = "BS_SMC_3Grupos20Mun_310322.csv",sep = ';',dec = ',',row.names = F)
+ ggsave("BS_medio_por_3grupos20Mun_310322.png", plot = BS_medio_por_regiao)
+ ggsave("Tendencia_por_3grupos20Mun_310322.png", plot = Tendencia_por_mesoregiao)
+}
