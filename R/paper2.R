@@ -131,47 +131,122 @@ df %>%
 }
 
 # Geração de mapas
+{
+ require(maptools)
+ require(RColorBrewer)
 
-require(maptools)
-require(RColorBrewer)
+ # Selecionamos algumas cores de uma paleta de cores do pacote RColorBrewer
+ ebs$scales<-factor(x=c("unsustainable","p.unsustainable","intermediary","p.sustainable","sustainable"),levels=c("unsustainable","p.unsustainable","intermediary","p.sustainable","sustainable"))
+ paletaDeCores = brewer.pal(5, 'RdYlGn')
+ coresDasCategorias = data.frame(nivel=levels(ebs$scales), Cores=paletaDeCores)
+# UF - Dimensão Ambiental
+ {
+  df_ambiental<-df %>%
+   select(-valor,-INDICADOR) %>%
+   group_by(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO) %>%
+   summarise(bs=mean(bs)) %>% filter(DIMENSAO=='DIM_AMBIENTAL')
+   df_ambiental$nivel<-as.factor(nivelBS(df_ambiental$bs))
 
-# Selecionamos algumas cores de uma paleta de cores do pacote RColorBrewer
-ebs$scales<-factor(x=c("unsustainable","p.unsustainable","intermediary","p.sustainable","sustainable"),levels=c("unsustainable","p.unsustainable","intermediary","p.sustainable","sustainable"))
-paletaDeCores = brewer.pal(5, 'RdYlGn')
-coresDasCategorias = data.frame(nivel=levels(ebs$scales), Cores=paletaDeCores)
+  mapaUF = readShapePoly("./inst/shapefile_pa_municipios/2000/municipios/15MU500G.shp")
 
-mapaUF = readShapePoly("./inst/shapefile_pa_municipios/2000/municipios/15MU500G.shp")
+  mapaData = attr(mapaUF, 'data')
+  mapaData$Index = row.names(mapaData)
+  mapaUF_df<-fortify(mapaUF)
+  mapaUF_df$Index<-as.factor(mapaUF_df$id)
 
-mapaData = attr(mapaUF, 'data')
-mapaData$Index = row.names(mapaData)
-mapaUF_df<-fortify(mapaUF)
-mapaUF_df$Index<-as.factor(mapaUF_df$id)
+  df_ambiental = merge(df_ambiental, coresDasCategorias)
+  mapaData_ambiental=merge(mapaData, df_ambiental,by.x="CODIGO",by.y="codigo")
+  attr(mapaUF, 'data')= mapaData_ambiental
 
-df_ambiental<-df %>%
-  select(-valor,-INDICADOR) %>%
-  group_by(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO) %>%
-  summarise(bs=mean(bs)) %>% filter(DIMENSAO=='DIM_AMBIENTAL')
-df_ambiental$nivel<-as.factor(nivelBS(df_ambiental$bs))
+  centroids <- setNames(do.call("rbind.data.frame", by(mapaUF_df, mapaUF_df$Index, function(x) {
+    Polygon(x[c('long', 'lat')])@labpt
+   })), c('long', 'lat'))
+  centroids$factors <- levels(mapaUF_df$Index)
 
-df_ambiental = merge(df_ambiental, coresDasCategorias)
-mapaData_ambiental=merge(mapaData, df_ambiental,by.x="CODIGO",by.y="codigo")
-attr(mapaUF, 'data')= mapaData_ambiental
+  # Configurando tela (reduzindo as margens da figura)
+  parDefault = par(no.readonly = T)
+  layout(matrix(c(1,2),nrow=2),widths= c(1,1), heights=c(4,1))
+  par (mar=c(0,0,0,0))
+  plot(mapaUF, col=as.character(mapaData_ambiental$Cores))
+  text(centroids$long,centroids$lat,centroids$factors,cex = 0.7,pos = 4,col = "black", offset=-0.2)
+  plot(1,1,pch=NA, axes=F)
+  legend(x='center', legend=rev(coresDasCategorias$nivel),
+         box.lty=0, fill=rev(paletaDeCores),cex=.8, ncol=2,
+         title='Mapa dos municípios paraenses segundo a dimensão ambiental')
+ }
+ rm(df_ambiental,mapaData_ambiental)
+# UF - Dimensão Social
+ {
+  df_social<-df %>%
+   select(-valor,-INDICADOR) %>%
+   group_by(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO) %>%
+   summarise(bs=mean(bs)) %>% filter(DIMENSAO=='DIM_SOCIAL')
+  df_social$nivel<-as.factor(nivelBS(df_social$bs))
 
-centroids <- setNames(do.call("rbind.data.frame", by(mapaUF_df, mapaUF_df$Index, function(x) {
-  Polygon(x[c('long', 'lat')])@labpt
- })), c('long', 'lat'))
-centroids$factors <- levels(mapaUF_df$Index)
+  mapaUF = readShapePoly("./inst/shapefile_pa_municipios/2000/municipios/15MU500G.shp")
 
-# Configurando tela (reduzindo as margens da figura)
-parDefault = par(no.readonly = T)
-layout(matrix(c(1,2),nrow=2),widths= c(1,1), heights=c(4,1))
-par (mar=c(0,0,0,0))
-plot(mapaUF, col=as.character(mapaData_ambiental$Cores))
-text(centroids$long,centroids$lat,centroids$factors,cex = 0.7,pos = 4,col = "black", offset=-0.2)
-plot(1,1,pch=NA, axes=F)
-legend(x='center', legend=rev(coresDasCategorias$nivel),
- box.lty=0, fill=rev(paletaDeCores),cex=.8, ncol=2,
- title='Mapa dos municípios paraenses segundo a dimensão ambiental')
+  mapaData = attr(mapaUF, 'data')
+  mapaData$Index = row.names(mapaData)
+  mapaUF_df<-fortify(mapaUF)
+  mapaUF_df$Index<-as.factor(mapaUF_df$id)
+
+  df_social = merge(df_social, coresDasCategorias)
+  mapaData_social=merge(mapaData, df_social,by.x="CODIGO",by.y="codigo")
+  attr(mapaUF, 'data')= mapaData_social
+
+  centroids <- setNames(do.call("rbind.data.frame", by(mapaUF_df, mapaUF_df$Index, function(x) {
+   Polygon(x[c('long', 'lat')])@labpt
+  })), c('long', 'lat'))
+  centroids$factors <- levels(mapaUF_df$Index)
+
+  # Configurando tela (reduzindo as margens da figura)
+  parDefault = par(no.readonly = T)
+  layout(matrix(c(1,2),nrow=2),widths= c(1,1), heights=c(4,1))
+  par (mar=c(0,0,0,0))
+  plot(mapaUF, col=as.character(mapaData_social$Cores))
+  text(centroids$long,centroids$lat,centroids$factors,cex = 0.7,pos = 4,col = "black", offset=-0.2)
+  plot(1,1,pch=NA, axes=F)
+  legend(x='center', legend=rev(coresDasCategorias$nivel),
+         box.lty=0, fill=rev(paletaDeCores),cex=.8, ncol=2,
+         title='Mapa dos municípios paraenses segundo a dimensão social')
+ }
+# UF - Dimensão Econômica
+rm(mapaData_social,df_social)
+  {
+  df_economico<-df %>%
+   select(-valor,-INDICADOR) %>%
+   group_by(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO) %>%
+   summarise(bs=mean(bs)) %>% filter(DIMENSAO=='DIM_ECONOMICA')
+   df_economico$nivel<-as.factor(nivelBS(df_economico$bs))
+
+  mapaUF = readShapePoly("./inst/shapefile_pa_municipios/2000/municipios/15MU500G.shp")
+
+  mapaData = attr(mapaUF, 'data')
+  mapaData$Index = row.names(mapaData)
+  mapaUF_df<-fortify(mapaUF)
+  mapaUF_df$Index<-as.factor(mapaUF_df$id)
+
+  df_economico = merge(df_economico, coresDasCategorias)
+  mapaData_economico=merge(mapaData, df_economico,by.x="CODIGO",by.y="codigo")
+  attr(mapaUF, 'data')= mapaData_economico
+
+  centroids <- setNames(do.call("rbind.data.frame", by(mapaUF_df, mapaUF_df$Index, function(x) {
+   Polygon(x[c('long', 'lat')])@labpt
+  })), c('long', 'lat'))
+  centroids$factors <- levels(mapaUF_df$Index)
+
+  # Configurando tela (reduzindo as margens da figura)
+  parDefault = par(no.readonly = T)
+  layout(matrix(c(1,2),nrow=2),widths= c(1,1), heights=c(4,1))
+  par (mar=c(0,0,0,0))
+  plot(mapaUF, col=as.character(mapaData_economico$Cores))
+  text(centroids$long,centroids$lat,centroids$factors,cex = 0.7,pos = 4,col = "black", offset=-0.2)
+  plot(1,1,pch=NA, axes=F)
+  legend(x='center', legend=rev(coresDasCategorias$nivel),
+         box.lty=0, fill=rev(paletaDeCores),cex=.8, ncol=2,
+         title='Mapa dos municípios paraenses segundo a dimensão econômico')
+ }
+}
 
 # Monte Carlo Process
 {
@@ -243,14 +318,14 @@ ifelse( !require(cowplot) ,install.packages("cowplot"),library(cowplot))
 
   Tendencia_por_mesoregiao <- do.call(ggarrange,list(ncol=1,labels="AUTO",plotlist=mget(ls(pattern = 'plotlm_'))))
   annotate_figure(Tendencia_por_mesoregiao,
-                  top = text_grob("Visualizing Tooth Growth", color = "red", face = "bold", size = 14),
-                  bottom = text_grob("Data source: \n ToothGrowth data set", color = "blue", face = "italic", size = 10))
+                  top = text_grob("Tendencia por região", color = "red", face = "bold", size = 14),
+                  bottom = text_grob("Fonte: Gerado pelos autores.", color = "blue", face = "italic", size = 10))
 
 #c("Nordeste","Sudeste","Marajó","Baixo Amazonas","Sudeste","Região Metropolitana")
 } #End Data visualization
 # Salvando os dados
 {
- write.table(x = SMC, file = "BS_SMC_3Grupos20Mun_310322.csv",sep = ';',dec = ',',row.names = F)
- ggsave("BS_medio_por_3grupos20Mun_310322.png", plot = BS_medio_por_regiao)
- ggsave("Tendencia_por_3grupos20Mun_310322.png", plot = Tendencia_por_mesoregiao)
+# write.table(x = SMC, file = "BS_SMC_3Grupos20Mun_310322.csv",sep = ';',dec = ',',row.names = F)
+# ggsave("BS_medio_por_3grupos20Mun_310322.png", plot = BS_medio_por_regiao)
+# ggsave("Tendencia_por_3grupos20Mun_310322.png", plot = Tendencia_por_mesoregiao)
 }
