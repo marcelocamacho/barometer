@@ -5,14 +5,14 @@ source("R/barometer.R")
 
 # Load
 {
-dataframe = readRDS(file = './dataframe143L24C.rds')
-edm_with_statistic <- read.csv('./paper_edm2.csv',header = T,sep = ';',fileEncoding = "UTF-8")
+dataframe = readRDS(file = './inst/dataframe143L24C.rds')
+edm_with_statistic <- read.csv('./inst/paper_edm2.csv',header = T,sep = ';',fileEncoding = "UTF-8")
 edm <- select(edm_with_statistic,-(indicated:UNIDADE)) %>% rename(indicador=variable)
 names(edm)[1]<-"INDICADOR"
 
-ebs=read.csv(file = './ebs.csv',sep = '|',dec = '.')
+ebs=read.csv(file = './inst/ebs.csv',sep = '|',dec = '.')
 
-territorios <- readxl::read_excel("./Unidades da Federação, Mesorregiões, microrregiões e municípios 2010.xls",
+territorios <- readxl::read_excel("./inst/extdata/Unidades da Federação, Mesorregiões, microrregiões e municípios 2010.xls",
     skip = 2)
 
 names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_microreg","nome_microreg","cod_mun","nome_mun")
@@ -38,7 +38,6 @@ names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_mic
 
 # Barometer Process
 {
-
   bsData <- NULL
 
   for (mun in names(data)[-c(1:2)]){
@@ -76,7 +75,6 @@ names(territorios) <- c("cod_uf","nome_uf","cod_mesoreg","nome_mesoreg","cod_mic
 #df$nome_mesoreg[df$nome_mesoreg %in% c('Baixo Amazonas','Marajó')] <- 'Grupo 1'
 #df$nome_mesoreg[df$nome_mesoreg %in% c('Metropolitana de Belém','Nordeste Paraense')] <- 'Grupo 2'
 #df$nome_mesoreg[df$nome_mesoreg %in% c('Sudeste Paraense','Sudoeste Paraense')] <- 'Grupo 3'
-
 
 ## ANÁLISES
 {
@@ -133,91 +131,47 @@ df %>%
 }
 
 # Geração de mapas
-# https://jtr13.github.io/cc19/plotting-maps-with-r-an-example-based-tutorial.html
-# https://slcladal.github.io/maps.html
-# https://www.geeksforgeeks.org/adding-labels-to-points-plotted-on-world-map-in-r/
-#https://stackoverflow.com/questions/57867991/how-to-annotate-r-map-with-text-and-points
-require(XML)
-require(RCurl)
+
 require(maptools)
 require(RColorBrewer)
-require(ggplot2)
 
-mapaUF = readShapePoly("15MU500G.shp")
-#mapaMun = rgdal::readOGR("15MU500G.shp")
+# Selecionamos algumas cores de uma paleta de cores do pacote RColorBrewer
+ebs$scales<-factor(x=c("unsustainable","p.unsustainable","intermediary","p.sustainable","sustainable"),levels=c("unsustainable","p.unsustainable","intermediary","p.sustainable","sustainable"))
+paletaDeCores = brewer.pal(5, 'RdYlGn')
+coresDasCategorias = data.frame(nivel=levels(ebs$scales), Cores=paletaDeCores)
 
-paletaDeCores = brewer.pal(9, 'OrRd')
+mapaUF = readShapePoly("./inst/shapefile_pa_municipios/2000/municipios/15MU500G.shp")
+
 mapaData = attr(mapaUF, 'data')
-mapaUF_df<-fortify(mapaUF)
-mapaUF_df$id<-as.factor(mapaUF_df$id)
 mapaData$Index = row.names(mapaData)
+mapaUF_df<-fortify(mapaUF)
+mapaUF_df$Index<-as.factor(mapaUF_df$id)
 
 df_ambiental<-df %>%
   select(-valor,-INDICADOR) %>%
   group_by(nome_mesoreg,nome_microreg,codigo,municipio,DIMENSAO) %>%
   summarise(bs=mean(bs)) %>% filter(DIMENSAO=='DIM_AMBIENTAL')
-
 df_ambiental$nivel<-as.factor(nivelBS(df_ambiental$bs))
 
-
-temp <- mapaUF
-a <- temp@data
-a <- a %>% mutate(identifier = strtoi(rownames(a)) + 1)
-b <- sp::merge(a, df_ambiental, by.x = "CODIGO", by.y="codigo", all.x= TRUE)
-b <- b[order(b$identifier),]
-row.names(b) <- 0:157
-temp@data <- b
-rm(a,b)
-
-# Selecionamos algumas cores de uma paleta de cores do pacote RColorBrewer
-paletaDeCores = brewer.pal(9, 'OrRd')
-paletaDeCores = paletaDeCores[-c(1,3,6,9)]
-coresDasCategorias = data.frame(nivel=levels(as.factor(ebs$scales)), Cores=paletaDeCores)
-
 df_ambiental = merge(df_ambiental, coresDasCategorias)
-
 mapaData_ambiental=merge(mapaData, df_ambiental,by.x="CODIGO",by.y="codigo")
 attr(mapaUF, 'data')= mapaData_ambiental
 
-
-
-
-
-
-centroids <- setNames(do.call("rbind.data.frame", by(mapaUF_df, mapaUF_df$id, function(x) {
+centroids <- setNames(do.call("rbind.data.frame", by(mapaUF_df, mapaUF_df$Index, function(x) {
   Polygon(x[c('long', 'lat')])@labpt
  })), c('long', 'lat'))
-centroids$factors <- levels(mapaUF_df$id)
-
-
-
-plot(temp, col=as.character(mapaData_ambiental$Cores))
-text(centroids$long,centroids$lat,centroids$factors,cex = 0.7,pos = 4,col = "black", offset=-0.2)
-#
-# map <- ggplot(data = mapaUF_df, aes(x = lat, y = long)) +
-#   geom_polygon(data = mapaUF) +
-#   with(centroids, annotate(geom="text", x = lat, y = long,
-#                            label=factors, size=3)) +
-#   scale_fill_gradient(low="white", high="darkgreen") +
-#   ggtitle("Vehicle-Related Crimes by Milwaukee Districts in 2018") +
-#   theme(plot.title = element_text(hjust = 0.5))
-
-
+centroids$factors <- levels(mapaUF_df$Index)
 
 # Configurando tela (reduzindo as margens da figura)
 parDefault = par(no.readonly = T)
 layout(matrix(c(1,2),nrow=2),widths= c(1,1), heights=c(4,1))
 par (mar=c(0,0,0,0))
-
-# Colar o código do mapa aqui com a legenda
-
+plot(mapaUF, col=as.character(mapaData_ambiental$Cores))
+text(centroids$long,centroids$lat,centroids$factors,cex = 0.7,pos = 4,col = "black", offset=-0.2)
 plot(1,1,pch=NA, axes=F)
-legend(x='center', legend=rev(levels(mapaData_ambiental$nivel)),
+legend(x='center', legend=rev(coresDasCategorias$nivel),
  box.lty=0, fill=rev(paletaDeCores),cex=.8, ncol=2,
  title='Mapa dos municípios paraenses segundo a dimensão ambiental')
-
-
-
 
 # Monte Carlo Process
 {
